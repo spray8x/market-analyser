@@ -12,10 +12,27 @@ const DataStore = (() => {
     return r.json();
   }
 
+  // Resolve data path relative to the repo root regardless of which HTML file loads this script.
+  // On GitHub Pages the repo name becomes a path segment, e.g. /market-analyser/data/...
+  // We walk up from the current script's location to find the data folder.
+  function _dataPath(file) {
+    // Find this script's directory, then resolve ../data/ relative to it
+    const scripts = document.querySelectorAll('script[src]');
+    let base = './';
+    scripts.forEach(s => {
+      if (s.src && s.src.includes('data.js')) {
+        // s.src is absolute; strip filename to get directory, then go up one level (js/ → root)
+        base = s.src.replace(/js\/data\.js.*$/, '');
+      }
+    });
+    return base + 'data/' + file;
+  }
+
   async function init() {
+    if (_products && _trends) return { products: _products, trends: _trends };
     [_products, _trends] = await Promise.all([
-      _fetchJSON('data/products.json'),
-      _fetchJSON('data/market_trends.json')
+      _fetchJSON(_dataPath('products.json')),
+      _fetchJSON(_dataPath('market_trends.json'))
     ]);
     return { products: _products, trends: _trends };
   }

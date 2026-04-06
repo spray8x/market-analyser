@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' https://placehold.co data:;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' https://placehold.co https://*.placehold.co data: blob:; connect-src 'self';">
+
 <title>VendorPulse — Marketplace</title>
 <link rel="stylesheet" href="css/base.css">
 <style>
@@ -310,14 +311,25 @@ let _cart    = [];  // { product, qty, unitPrice }
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('city-sel-cust').value = _currentCity;
 
-  const { products, trends } = await DataStore.init();
-  _cityMul = DataStore.getCityMultipliers();
-  _vendors  = DataStore.getVendors();
+  try {
+    await DataStore.init();
+    _cityMul = DataStore.getCityMultipliers();
+    _vendors  = DataStore.getVendors();
 
-  buildCategoryList();
-  buildBrandChips();
-  updatePriceRange();
-  renderGrid();
+    buildCategoryList();
+    buildBrandChips();
+    updatePriceRange();
+    renderGrid();
+  } catch(e) {
+    console.error('[VendorPulse] Customer init failed:', e);
+    const grid = document.getElementById('product-grid');
+    if (grid) grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <p style="color:#e74c5e;font-weight:600">Data load failed</p>
+      <p style="font-size:.82rem;margin-top:8px">${e.message || e}</p>
+      <p style="font-size:.75rem;color:var(--col-text-dim);margin-top:8px">Serve via HTTP: <code>python3 -m http.server 8000</code></p>
+    </div>`;
+  }
 });
 
 function onCityChange(city) {

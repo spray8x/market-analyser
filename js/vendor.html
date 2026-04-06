@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' https://placehold.co https://*.placehold.co data: blob:; connect-src 'self';">
+
+<title>VendorPulse — Vendor Dashboard</title>
+<link rel="stylesheet" href="css/base.css">
+<style>
+/* ── Layout ── */
+.layout { display: flex; min-height: calc(100vh - 58px); }
+
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--col-surface);
+  border-right: 1px solid var(--col-border);
+  padding: var(--sp-lg) var(--sp-md);
+  display: flex; flex-direction: column; gap: 4px;
+  position: sticky; top: 58px; height: calc(100vh - 58px);
+  overflow-y: auto;
+}
+.sidebar-label {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--col-text-dim); padding: var(--sp-md) var(--sp-sm) var(--sp-xs);
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--r-sm);
+  cursor: pointer; font-size: .88rem; color: var(--col-text-muted);
+  transition: background .15s, color .15s;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--col-card); color: var(--col-text); }
+.nav-item.active { background: rgba(245,166,35,.1); color: var(--col-accent); font-weight: 600; }
+.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.main { flex: 1; padding: var(--sp-xl); max-width: 1300px; overflow-x: hidden; }
+
+/* ── Stats row ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-md); margin-bottom: var(--sp-xl); }
+
+/* ── Chart area ── */
+.chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--sp-lg); margin-bottom: var(--sp-xl); }
+.chart-card { background: var(--col-card); border: 1px solid var(--col-border); border-radius: var(--r-md); padding: var(--sp-lg); }
+.chart-card canvas { max-height: 260px; }
+
+/* ── Trend filter tabs ── */
+.trend-tabs { display: flex; gap: 4px; margin-bottom: var(--sp-lg); flex-wrap: wrap; }
+.trend-tab {
+  padding: 5px 14px; border-radius: 99px; border: 1px solid var(--col-border);
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  background: none; color: var(--col-text-muted);
+  transition: all .15s;
+}
+.trend-tab.active { background: var(--col-accent); color: #111; border-color: var(--col-accent); }
+
+/* ── Competitor table ── */
+.comp-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.comp-table th { text-align: left; padding: 10px 12px; color: var(--col-text-muted); font-weight: 500; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--col-border); }
+.comp-table td { padding: 12px; border-bottom: 1px solid var(--col-border); vertical-align: middle; }
+.comp-table tr:last-child td { border-bottom: none; }
+.comp-table tr:hover td { background: rgba(255,255,255,.02); }
+.comp-row-mine { background: rgba(245,166,35,.05) !important; }
+.price-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.price-bar { height: 6px; border-radius: 99px; background: var(--col-accent); opacity: .6; }
+.lowest-badge { font-size: .68rem; background: rgba(46,204,143,.15); color: var(--col-green); padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+.highest-badge { font-size: .68rem; background: rgba(231,76,94,.15); color: var(--col-red); padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+
+/* ── Inventory grid ── */
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-md); }
+.inv-card { background: var(--col-card); border: 1px solid var(--col-border); border-radius: var(--r-md); padding: var(--sp-md); display: flex; flex-direction: column; gap: 10px; }
+.inv-card img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--r-sm); }
+.inv-name { font-weight: 600; font-size: .9rem; }
+.inv-meta { font-size: .78rem; color: var(--col-text-muted); }
+.inv-price-row { display: flex; align-items: center; justify-content: space-between; }
+.stock-bar-wrap { height: 4px; background: var(--col-border); border-radius: 99px; overflow: hidden; }
+.stock-bar { height: 100%; border-radius: 99px; transition: width .4s ease; }
+
+/* ── Demand heatmap row ── */
+.demand-row { display: grid; grid-template-columns: 100px repeat(24, 1fr); gap: 3px; align-items: center; margin-bottom: 4px; }
+.demand-row .cat-label { font-size: .75rem; color: var(--col-text-muted); }
+.heat-cell { height: 22px; border-radius: 3px; position: relative; cursor: default; }
+.heat-cell:hover::after {
+  content: attr(data-tip); position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+  background: var(--col-card); border: 1px solid var(--col-border);
+  color: var(--col-text); font-size: .7rem; padding: 4px 8px; border-radius: 4px;
+  white-space: nowrap; pointer-events: none; z-index: 10;
+}
+.demand-month-labels { display: grid; grid-template-columns: 100px repeat(24, 1fr); gap: 3px; margin-bottom: 12px; }
+.demand-month-labels span { font-size: .62rem; color: var(--col-text-dim); text-align: center; overflow: hidden; }
+
+/* ── Section panels ── */
+.panel { display: none; }
+.panel.active { display: block; animation: fadeUp .3s ease both; }
+
+/* ── City selector in header ── */
+.topbar-city { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
+.topbar-city select { width: 130px; padding: 5px 8px; font-size: .8rem; }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <a href="index.html" class="topbar-logo">Vendor<span>Pulse</span></a>
+  <span class="role-badge">Vendor</span>
+  <div class="topbar-city" style="margin-left:auto">
+    📍
+    <select id="city-sel" onchange="onCityChange(this.value)">
+      <option value="Mumbai">Mumbai</option>
+      <option value="Delhi">Delhi</option>
+      <option value="Bangalore">Bangalore</option>
+      <option value="Chennai">Chennai</option>
+      <option value="Hyderabad">Hyderabad</option>
+      <option value="Ahmedabad">Ahmedabad</option>
+      <option value="Pune">Pune</option>
+      <option value="Kolkata">Kolkata</option>
+    </select>
+  </div>
+  <a href="index.html" class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px" onclick="Auth.clearRole()">← Switch Role</a>
+</nav>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Analytics</div>
+    <button class="nav-item active" onclick="showPanel('overview',this)">
+      <span class="icon">📈</span> Market Overview
+    </button>
+    <button class="nav-item" onclick="showPanel('trends',this)">
+      <span class="icon">📉</span> Price Trends
+    </button>
+    <button class="nav-item" onclick="showPanel('demand',this)">
+      <span class="icon">🌡️</span> Demand Signals
+    </button>
+    <div class="sidebar-label">Products</div>
+    <button class="nav-item" onclick="showPanel('inventory',this)">
+      <span class="icon">📦</span> My Inventory
+    </button>
+    <button class="nav-item" onclick="showPanel('competitor',this)">
+      <span class="icon">🔍</span> Competitor Prices
+    </button>
+    <div class="sidebar-label">Tools</div>
+    <button class="nav-item" onclick="showPanel('pricer',this)">
+      <span class="icon">🧮</span> Price Recommender
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="section-head">
+        <h2>Market Overview</h2>
+        <span id="overview-date" style="font-size:.82rem;color:var(--col-text-muted)"></span>
+      </div>
+
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="section-head" style="margin-bottom:12px">
+            <h2 style="font-size:1rem">WPI Price Index — Last 24 Months</h2>
+            <div class="trend-tabs" id="overview-tabs"></div>
+          </div>
+          <canvas id="overview-chart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="section-head" style="margin-bottom:12px">
+            <h2 style="font-size:1rem">Market Competition</h2>
+          </div>
+          <canvas id="comp-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-head" style="margin-bottom:var(--sp-md)">
+          <h2 style="font-size:1rem">Regional Price Variance (vs National Avg)</h2>
+        </div>
+        <canvas id="region-chart" style="max-height:200px"></canvas>
+      </div>
+    </div>
+
+    <!-- ═══ PRICE TRENDS ═══ -->
+    <div class="panel" id="panel-trends">
+      <div class="section-head">
+        <h2>Price Trends</h2>
+        <div class="trend-tabs" id="trend-cat-tabs"></div>
+      </div>
+      <div class="chart-card" style="margin-bottom:var(--sp-lg)">
+        <canvas id="trend-main-chart" style="max-height:300px"></canvas>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h2 style="font-size:1rem;margin-bottom:var(--sp-md)">Absolute Price (₹)</h2>
+          <canvas id="trend-abs-chart" style="max-height:220px"></canvas>
+        </div>
+        <div class="chart-card">
+          <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:var(--sp-md)">Category Snapshot</div>
+          <div id="trend-snapshot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DEMAND ═══ -->
+    <div class="panel" id="panel-demand">
+      <div class="section-head">
+        <h2>Demand Signals — Seasonality Heatmap</h2>
+      </div>
+      <div class="chart-card" style="margin-bottom:var(--sp-lg);overflow-x:auto">
+        <div style="min-width:700px">
+          <div class="demand-month-labels" id="demand-month-labels"></div>
+          <div id="demand-heatmap"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h2 style="font-size:1rem;margin-bottom:var(--sp-md)">Monthly Demand Index (All Categories)</h2>
+        <canvas id="demand-chart" style="max-height:260px"></canvas>
+      </div>
+    </div>
+
+    <!-- ═══ INVENTORY ═══ -->
+    <div class="panel" id="panel-inventory">
+      <div class="section-head">
+        <h2>My Inventory</h2>
+        <div style="display:flex;gap:8px">
+          <select id="inv-cat-filter" onchange="renderInventory()" style="width:160px">
+            <option value="">All Categories</option>
+          </select>
+          <input type="search" id="inv-search" placeholder="Search products…" style="width:200px" oninput="renderInventory()">
+        </div>
+      </div>
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+
+    <!-- ═══ COMPETITOR ═══ -->
+    <div class="panel" id="panel-competitor">
+      <div class="section-head">
+        <h2>Competitor Price Analysis</h2>
+        <select id="comp-product-sel" style="width:280px" onchange="renderCompetitor()">
+        </select>
+      </div>
+      <div class="chart-card" style="margin-bottom:var(--sp-lg)">
+        <table class="comp-table" id="comp-table"></table>
+      </div>
+      <div class="chart-card">
+        <canvas id="comp-bar-chart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+
+    <!-- ═══ PRICE RECOMMENDER ═══ -->
+    <div class="panel" id="panel-pricer">
+      <div class="section-head"><h2>Price Recommender</h2></div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <label style="font-size:.85rem;color:var(--col-text-muted);display:block;margin-bottom:8px">Select Product</label>
+          <select id="pricer-product" style="margin-bottom:var(--sp-lg)" onchange="updatePricer()"></select>
+          <div id="pricer-result"></div>
+        </div>
+        <div class="chart-card">
+          <h2 style="font-size:1rem;margin-bottom:var(--sp-md)">Set My Price</h2>
+          <label style="font-size:.82rem;color:var(--col-text-muted)">Your price (₹)</label>
+          <div style="display:flex;gap:8px;margin-top:6px;margin-bottom:var(--sp-md)">
+            <input type="number" id="pricer-input" style="flex:1" min="0">
+            <button class="btn btn-primary" onclick="evaluatePrice()">Analyse</button>
+          </div>
+          <div id="pricer-feedback"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/pricing.js"></script>
+<script src="js/data.js"></script>
+<script>
+// ── Guard ──
+if (!Auth.requireRole('vendor')) { /* redirected */ }
+
+// ── Shared state ──
+let _trends, _products, _vendors, _cityMul;
+let _charts = {};
+let _currentCity = Auth.getCity();
+const MY_VENDOR = 'V001';
+
+// ── Panel navigation ──
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function onCityChange(city) {
+  _currentCity = city;
+  Auth.setCity(city);
+  renderInventory();
+  renderCompetitor();
+  renderPricer();
+}
+
+// ── Chart helper ──
+function mkChart(id, config) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  const canvas = document.getElementById(id);
+  if (!canvas) { console.warn('mkChart: no canvas#' + id); return null; }
+  _charts[id] = new Chart(canvas, config);
+  return _charts[id];
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async () => {
+  // Apply Chart.js defaults here, after Chart is guaranteed loaded
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color          = '#7a82a0';
+    Chart.defaults.borderColor    = '#252a3a';
+    Chart.defaults.font.family    = "'DM Sans', sans-serif";
+    Chart.defaults.font.size      = 12;
+    Chart.defaults.plugins.legend.labels.usePointStyle      = true;
+    Chart.defaults.plugins.legend.labels.pointStyleWidth    = 8;
+  }
+
+  document.getElementById('city-sel').value = _currentCity;
+  document.getElementById('overview-date').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  try {
+    const data = await DataStore.init();
+    _trends   = data.trends;
+    _products = DataStore.getProducts();
+    _vendors  = DataStore.getVendors();
+    _cityMul  = DataStore.getCityMultipliers();
+
+    renderOverview();
+    renderTrends();
+    renderDemand();
+    renderInventory();
+    populateCompetitorSelect();
+    renderCompetitor();
+    populatePricerSelect();
+    updatePricer();
+  } catch(e) {
+    console.error('[VendorPulse] Init failed:', e);
+    const main = document.querySelector('.main');
+    if (main) main.insertAdjacentHTML('afterbegin',
+      `<div style="background:rgba(231,76,94,.1);border:1px solid rgba(231,76,94,.4);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.85rem">
+        <strong style="color:#e74c5e">⚠ Data load failed</strong><br>
+        <span style="color:#7a82a0">${e.message || e}</span><br>
+        <span style="color:#4a5070;font-size:.75rem">Ensure you are serving via HTTP (not file://). Run: <code>python3 -m http.server 8000</code></span>
+      </div>`);
+    toast('Data load failed — see error banner above', 'error', 8000);
+  }
+});
+
+// ════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════
+function renderOverview() {
+  const series = _trends.wpi_series;
+  const keys   = Object.keys(series);
+
+  // Stats row
+  const statsRow = document.getElementById('stats-row');
+  statsRow.innerHTML = '';
+  keys.slice(0,4).forEach(k => {
+    const s = series[k];
+    const dir = s.yoy_change >= 0 ? 'up' : 'down';
+    const arrow = s.yoy_change >= 0 ? '▲' : '▼';
+    statsRow.insertAdjacentHTML('beforeend', `
+      <div class="stat-tile anim-fadeup">
+        <div class="label">${s.label}</div>
+        <div class="value">${Pricing.formatINR(s.current_price)}</div>
+        <div class="delta ${dir}">${arrow} ${Math.abs(s.yoy_change)}% year-on-year</div>
+        <div style="font-size:.75rem;color:var(--col-text-dim)">per ${s.unit.split('/')[1]||'unit'}</div>
+      </div>`);
+  });
+
+  // Tab buttons for overview chart
+  const tabsEl = document.getElementById('overview-tabs');
+  tabsEl.innerHTML = '';
+  keys.forEach((k, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'trend-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = series[k].label;
+    btn.onclick = () => {
+      tabsEl.querySelectorAll('.trend-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateOverviewChart(k);
+    };
+    tabsEl.appendChild(btn);
+  });
+
+  updateOverviewChart(keys[0]);
+
+  // Competition donut
+  const compLandscape = _trends.competitor_landscape;
+  const catLabels = Object.keys(compLandscape);
+  mkChart('comp-chart', {
+    type: 'doughnut',
+    data: {
+      labels: catLabels.map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+      datasets: [{
+        data: catLabels.map(k => compLandscape[k].vendors),
+        backgroundColor: ['#f5a623','#4fc3f7','#2ecc8f','#8e44ad','#e74c5e','#e67e22'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: { legend: { position: 'right' }, tooltip: {
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString('en-IN')} vendors` }
+      }}
+    }
+  });
+
+  // Regional bar
+  const rv = _trends.regional_price_variance;
+  const cities = Object.keys(rv);
+  const catKeys = Object.keys(rv[cities[0]]);
+  const colours = ['#f5a623','#4fc3f7','#2ecc8f','#8e44ad','#e74c5e','#e67e22'];
+  mkChart('region-chart', {
+    type: 'bar',
+    data: {
+      labels: cities,
+      datasets: catKeys.map((cat, i) => ({
+        label: cat.charAt(0).toUpperCase() + cat.slice(1),
+        data: cities.map(c => rv[c][cat]),
+        backgroundColor: colours[i] + '99',
+        borderColor: colours[i],
+        borderWidth: 1
+      }))
+    },
+    options: {
+      scales: {
+        y: { title: { display: true, text: 'Index (100 = national avg)' }, min: 90, max: 115 }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+function updateOverviewChart(key) {
+  const s = _trends.wpi_series[key];
+  mkChart('overview-chart', {
+    type: 'line',
+    data: {
+      labels: s.months,
+      datasets: [{
+        label: s.label + ' WPI Index',
+        data: s.index,
+        borderColor: s.colour,
+        backgroundColor: s.colour + '18',
+        fill: true,
+        tension: .35,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: s.colour,
+      }]
+    },
+    options: {
+      scales: { y: { title: { display: true, text: 'Index (2020=100)' } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// PRICE TRENDS
+// ════════════════════════════════════════
+function renderTrends() {
+  const series = _trends.wpi_series;
+  const keys   = Object.keys(series);
+
+  // Category tabs
+  const tabsEl = document.getElementById('trend-cat-tabs');
+  keys.forEach((k, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'trend-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = series[k].label;
+    btn.onclick = () => {
+      tabsEl.querySelectorAll('.trend-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateTrendCharts(k);
+    };
+    tabsEl.appendChild(btn);
+  });
+
+  updateTrendCharts(keys[0]);
+}
+
+function updateTrendCharts(key) {
+  const series = _trends.wpi_series;
+  const s = series[key];
+
+  // All categories overlaid
+  const colours = ['#f5a623','#4fc3f7','#2ecc8f','#8e44ad','#e74c5e','#e67e22'];
+  mkChart('trend-main-chart', {
+    type: 'line',
+    data: {
+      labels: s.months,
+      datasets: Object.values(series).map((sr, i) => ({
+        label: sr.label,
+        data: sr.index,
+        borderColor: colours[i],
+        backgroundColor: 'transparent',
+        tension: .35,
+        borderWidth: key === Object.keys(series)[i] ? 3 : 1.5,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        opacity: key === Object.keys(series)[i] ? 1 : 0.4
+      }))
+    },
+    options: {
+      scales: { y: { title: { display: true, text: 'WPI Index (2020 = 100)' } } },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+
+  // Absolute price chart for selected
+  mkChart('trend-abs-chart', {
+    type: 'bar',
+    data: {
+      labels: s.months.slice(-12),
+      datasets: [{
+        label: Pricing.formatINR(0).replace('0','') + ' / ' + (s.unit.split('/')[1] || 'unit'),
+        data: s.price.slice(-12),
+        backgroundColor: s.colour + '66',
+        borderColor: s.colour,
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      scales: { y: { title: { display: true, text: `₹ per ${s.unit.split('/')[1]||'unit'}` } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Snapshot panel
+  const snap = document.getElementById('trend-snapshot');
+  snap.innerHTML = Object.entries(series).map(([k, sr]) => {
+    const dir = sr.yoy_change >= 0 ? 'up' : 'down';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--col-border)">
+      <span style="font-size:.85rem;color:${k===key?'var(--col-text)':'var(--col-text-muted)'};font-weight:${k===key?600:400}">${sr.label}</span>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="font-weight:700;font-size:.9rem">${Pricing.formatINR(sr.current_price)}</span>
+        <span class="delta ${dir}" style="font-size:.78rem">${sr.yoy_change >= 0 ? '▲' : '▼'} ${Math.abs(sr.yoy_change)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// DEMAND
+// ════════════════════════════════════════
+function renderDemand() {
+  const ds = _trends.demand_signals;
+  const months = _trends.wpi_series.cement.months;
+  const cats   = Object.keys(ds).filter(k => k !== 'note');
+  const colours = { cement:'#e67e22', steel:'#2980b9', tiles:'#27ae60', paints:'#8e44ad', plywood:'#c0392b', wiring:'#d35400' };
+
+  // Month labels
+  const labelsEl = document.getElementById('demand-month-labels');
+  labelsEl.innerHTML = '<span></span>' + months.map(m => `<span>${m.split("'")[0]}</span>`).join('');
+
+  // Heatmap
+  const heatmapEl = document.getElementById('demand-heatmap');
+  heatmapEl.innerHTML = cats.map(cat => {
+    const vals = ds[cat];
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const cells = vals.map((v, i) => {
+      const t = (v - min) / (max - min);
+      const alpha = 0.15 + t * 0.75;
+      const col = colours[cat] || '#f5a623';
+      return `<div class="heat-cell" style="background:${col};opacity:${alpha}" data-tip="${months[i]}: index ${v}"></div>`;
+    }).join('');
+    return `<div class="demand-row">
+      <span class="cat-label">${cat.charAt(0).toUpperCase()+cat.slice(1)}</span>
+      ${cells}
+    </div>`;
+  }).join('');
+
+  // Line chart
+  const allMonths = months;
+  const catKeys = cats;
+  mkChart('demand-chart', {
+    type: 'line',
+    data: {
+      labels: allMonths,
+      datasets: catKeys.map((cat, i) => ({
+        label: cat.charAt(0).toUpperCase()+cat.slice(1),
+        data: ds[cat],
+        borderColor: colours[cat] || '#f5a623',
+        backgroundColor: 'transparent',
+        tension: .4, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2
+      }))
+    },
+    options: {
+      scales: { y: { title: { display: true, text: 'Demand Index (100 = avg)' } } },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// INVENTORY
+// ════════════════════════════════════════
+function renderInventory() {
+  const search = (document.getElementById('inv-search')?.value || '').toLowerCase();
+  const catFilter = document.getElementById('inv-cat-filter')?.value || '';
+
+  // Populate category filter (once)
+  const catSel = document.getElementById('inv-cat-filter');
+  if (catSel.options.length <= 1) {
+    DataStore.getCategories().forEach(c => {
+      catSel.insertAdjacentHTML('beforeend', `<option value="${esc(c.id)}">${esc(c.label)}</option>`);
+    });
+  }
+
+  let products = DataStore.getProducts({ category: catFilter || undefined });
+  if (search) products = products.filter(p =>
+    p.name.toLowerCase().includes(search) || p.brand.toLowerCase().includes(search)
+  );
+
+  const grid = document.getElementById('inv-grid');
+  if (!products.length) { grid.innerHTML = '<p style="color:var(--col-text-muted)">No products found.</p>'; return; }
+
+  grid.innerHTML = products.map(p => {
+    const price  = Pricing.getVendorPrice(p.basePrice, p.id, MY_VENDOR);
+    const cityPrice = Pricing.applyCityMultiplier(price, _currentCity, _cityMul);
+    const stockPct = Math.min(100, Math.round(p.stock / 200));
+    const stockCol = stockPct > 50 ? '#2ecc8f' : stockPct > 20 ? '#f5a623' : '#e74c5e';
+
+    return `<div class="inv-card anim-fadeup">
+      <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">
+      <div>
+        <div class="inv-name">${esc(p.name)}</div>
+        <div class="inv-meta">${esc(p.brand)} · ${esc(p.subcategory)}</div>
+      </div>
+      <div class="inv-price-row">
+        <span class="price-main">${Pricing.formatINR(cityPrice)}<span style="font-size:.78rem;font-weight:400;color:var(--col-text-muted)"> /${esc(p.unit)}</span></span>
+        <span class="tag">${esc(p.minOrderQty)}+ MOQ</span>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--col-text-muted);margin-bottom:4px">
+          <span>Stock</span><span>${p.stock.toLocaleString('en-IN')} ${esc(p.unit)}</span>
+        </div>
+        <div class="stock-bar-wrap">
+          <div class="stock-bar" style="width:${stockPct}%;background:${stockCol}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// COMPETITOR
+// ════════════════════════════════════════
+function populateCompetitorSelect() {
+  const sel = document.getElementById('comp-product-sel');
+  DataStore.getProducts().forEach(p => {
+    sel.insertAdjacentHTML('beforeend', `<option value="${esc(p.id)}">${esc(p.name)}</option>`);
+  });
+}
+
+function renderCompetitor() {
+  const sel = document.getElementById('comp-product-sel');
+  if (!sel.value) return;
+  const p = DataStore.getProduct(sel.value);
+  if (!p) return;
+
+  const prices = Pricing.getAllVendorPrices(p.basePrice, p.id, _vendors);
+  const minP = prices[0].price, maxP = prices[prices.length-1].price;
+  const myRow = prices.find(r => r.vendor_id === MY_VENDOR);
+
+  const table = document.getElementById('comp-table');
+  table.innerHTML = `<thead><tr>
+    <th>Rank</th><th>Vendor</th><th>City</th><th>Price (${esc(p.unit)})</th><th>vs Market</th><th>Rating</th>
+  </tr></thead><tbody>
+  ${prices.map((r,i) => {
+    const isMine = r.vendor_id === MY_VENDOR;
+    const barW = Math.round((r.price - minP) / (maxP - minP + 1) * 100);
+    const tag = r.price === minP ? '<span class="lowest-badge">Lowest</span>' : r.price === maxP ? '<span class="highest-badge">Highest</span>' : '';
+    return `<tr class="${isMine ? 'comp-row-mine' : ''}">
+      <td style="color:var(--col-text-muted)">#${i+1}${isMine ? ' <strong style="color:var(--col-accent)">YOU</strong>' : ''}</td>
+      <td style="font-weight:${isMine?600:400}">${esc(r.vendor_name)}</td>
+      <td style="color:var(--col-text-muted)">${esc(r.city)}</td>
+      <td>
+        <div class="price-bar-wrap">
+          <strong>${Pricing.formatINR(r.price)}</strong>
+          <div class="price-bar" style="width:${barW}px;max-width:80px"></div>
+          ${tag}
+        </div>
+      </td>
+      <td class="delta ${r.price <= myRow?.price ? 'up' : 'down'}">${r.vendor_id !== MY_VENDOR ? (r.price < myRow?.price ? `▼ ${Pricing.formatINR(myRow.price - r.price)} cheaper` : `▲ ${Pricing.formatINR(r.price - myRow.price)} dearer`) : '—'}</td>
+      <td><span class="stars">★</span> ${r.rating}</td>
+    </tr>`;
+  }).join('')}
+  </tbody>`;
+
+  // Bar chart
+  mkChart('comp-bar-chart', {
+    type: 'bar',
+    data: {
+      labels: prices.map(r => r.vendor_id === MY_VENDOR ? 'You ('+r.vendor_name+')' : r.vendor_name),
+      datasets: [{
+        data: prices.map(r => r.price),
+        backgroundColor: prices.map(r => r.vendor_id === MY_VENDOR ? '#f5a62399' : '#4fc3f740'),
+        borderColor: prices.map(r => r.vendor_id === MY_VENDOR ? '#f5a623' : '#4fc3f7'),
+        borderWidth: 2, borderRadius: 4
+      }]
+    },
+    options: {
+      scales: { y: { title: { display: true, text: `₹ / ${p.unit}` } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// PRICER
+// ════════════════════════════════════════
+function populatePricerSelect() {
+  const sel = document.getElementById('pricer-product');
+  DataStore.getProducts().forEach(p => {
+    sel.insertAdjacentHTML('beforeend', `<option value="${esc(p.id)}">${esc(p.name)}</option>`);
+  });
+  // mirror to competitor select if not already populated
+  const compSel = document.getElementById('comp-product-sel');
+  if (!compSel.options.length) populateCompetitorSelect();
+}
+
+function renderPricer() { updatePricer(); }
+
+function updatePricer() {
+  const sel = document.getElementById('pricer-product');
+  if (!sel?.value) return;
+  const p = DataStore.getProduct(sel.value);
+  if (!p) return;
+
+  const myPrice = Pricing.getVendorPrice(p.basePrice, p.id, MY_VENDOR);
+  const cityPrice = Pricing.applyCityMultiplier(myPrice, _currentCity, _cityMul);
+  const band = Pricing.recommendedBand(p.basePrice);
+  const allPrices = Pricing.getAllVendorPrices(p.basePrice, p.id, _vendors);
+  const avg = Math.round(allPrices.reduce((s,r) => s+r.price, 0) / allPrices.length);
+
+  document.getElementById('pricer-input').value = cityPrice;
+  document.getElementById('pricer-result').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:var(--sp-md)">
+      <div class="stat-tile"><div class="label">Your Current Price (${esc(_currentCity)})</div><div class="value">${Pricing.formatINR(cityPrice)}</div></div>
+      <div class="stat-tile"><div class="label">Recommended Band</div><div class="value" style="font-size:1.3rem">${Pricing.formatINR(band.low)} – ${Pricing.formatINR(band.high)}</div></div>
+      <div class="stat-tile"><div class="label">Market Average (5 vendors)</div><div class="value">${Pricing.formatINR(avg)}</div></div>
+      <div class="stat-tile"><div class="label">Base Market Rate</div><div class="value">${Pricing.formatINR(p.basePrice)}</div></div>
+    </div>`;
+}
+
+function evaluatePrice() {
+  const sel = document.getElementById('pricer-product');
+  const p = DataStore.getProduct(sel.value);
+  if (!p) return;
+  const input = parseFloat(document.getElementById('pricer-input').value);
+  if (isNaN(input) || input <= 0) { toast('Enter a valid price', 'error'); return; }
+
+  const band = Pricing.recommendedBand(p.basePrice);
+  const allPrices = Pricing.getAllVendorPrices(p.basePrice, p.id, _vendors);
+  const cheaperCount = allPrices.filter(r => r.price < input && r.vendor_id !== MY_VENDOR).length;
+  const rank = cheaperCount + 1;
+
+  let msg, cls;
+  if (input < band.low) {
+    msg = `⚠️ Below recommended band. You're underpricing — potential margin loss of ${Pricing.formatINR(band.low - input)}/${p.unit}.`; cls = 'amber';
+  } else if (input > band.high) {
+    msg = `🔴 Above recommended band. Risk of losing customers to competitors.`; cls = 'error';
+  } else {
+    msg = `✅ Price within recommended band. Ranked #${rank} of ${allPrices.length} vendors.`; cls = 'success';
+  }
+
+  document.getElementById('pricer-feedback').innerHTML = `
+    <div class="card card-pad" style="margin-top:var(--sp-md)">
+      <div style="font-weight:600;margin-bottom:8px">Analysis</div>
+      <p style="font-size:.88rem;color:var(--col-text-muted);margin-bottom:var(--sp-md)">${msg}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="stat-tile"><div class="label">Market Rank</div><div class="value" style="font-size:1.4rem">#${rank} / ${allPrices.length}</div></div>
+        <div class="stat-tile"><div class="label">vs Base Rate</div>
+          <div class="value delta ${input >= p.basePrice ? 'up' : 'down'}" style="font-size:1.4rem">${input >= p.basePrice ? '+' : ''}${Math.round((input/p.basePrice - 1)*100)}%</div>
+        </div>
+      </div>
+    </div>`;
+  toast(cls === 'success' ? 'Good pricing!' : 'Check the feedback below.', cls === 'error' ? 'error' : cls === 'amber' ? 'info' : 'success');
+}
+</script>
+</body>
+</html>

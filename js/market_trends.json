@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "base_year": 2020,
+    "base_index": 100,
+    "frequency": "monthly",
+    "currency": "INR",
+    "note": "Index values relative to 2020 baseline. Absolute prices sourced from Indian market surveys."
+  },
+  "wpi_series": {
+    "cement": {
+      "label": "Cement",
+      "colour": "#e67e22",
+      "unit": "₹/bag (50kg)",
+      "current_price": 428,
+      "yoy_change": +4.2,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [128, 130, 132, 131, 129, 130, 133, 135, 136, 137, 135, 134, 136, 139, 142, 140, 138, 139, 141, 143, 144, 142, 143, 145],
+      "price":  [390, 395, 400, 398, 393, 396, 403, 410, 413, 416, 410, 407, 413, 422, 430, 425, 419, 422, 428, 434, 437, 431, 434, 440]
+    },
+    "steel": {
+      "label": "Steel (TMT Fe500)",
+      "colour": "#2980b9",
+      "unit": "₹/kg",
+      "current_price": 63,
+      "yoy_change": -2.1,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [115, 114, 113, 110, 108, 107, 106, 108, 110, 111, 109, 108, 107, 106, 105, 104, 103, 105, 106, 107, 108, 107, 106, 105],
+      "price":  [68, 67, 67, 65, 64, 64, 63, 64, 65, 65, 64, 64, 63, 63, 62, 62, 61, 62, 63, 63, 64, 63, 63, 62]
+    },
+    "tiles": {
+      "label": "Tiles (Vitrified avg)",
+      "colour": "#27ae60",
+      "unit": "₹/sq.ft",
+      "current_price": 88,
+      "yoy_change": +6.5,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [118, 119, 120, 121, 120, 121, 122, 123, 124, 125, 124, 124, 125, 126, 128, 129, 128, 129, 130, 131, 132, 131, 132, 133],
+      "price":  [78, 79, 79, 80, 79, 80, 80, 81, 82, 82, 82, 82, 83, 83, 85, 85, 85, 85, 86, 87, 87, 86, 87, 88]
+    },
+    "paints": {
+      "label": "Paints (Interior emulsion)",
+      "colour": "#8e44ad",
+      "unit": "₹/litre",
+      "current_price": 195,
+      "yoy_change": +3.8,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [122, 123, 124, 125, 124, 125, 126, 127, 128, 129, 128, 128, 129, 130, 131, 132, 131, 132, 133, 134, 135, 134, 135, 136],
+      "price":  [176, 177, 179, 180, 179, 180, 181, 183, 185, 186, 185, 185, 186, 187, 189, 191, 189, 191, 192, 193, 195, 193, 195, 196]
+    },
+    "plywood": {
+      "label": "Plywood (Commercial BWR)",
+      "colour": "#c0392b",
+      "unit": "₹/sheet (8×4)",
+      "current_price": 2450,
+      "yoy_change": +5.2,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [125, 126, 127, 127, 126, 127, 128, 129, 130, 131, 130, 130, 131, 132, 133, 134, 133, 134, 135, 136, 137, 136, 137, 138],
+      "price":  [2200, 2220, 2240, 2240, 2220, 2240, 2260, 2280, 2300, 2320, 2300, 2300, 2320, 2340, 2360, 2380, 2360, 2380, 2400, 2420, 2440, 2420, 2440, 2460]
+    },
+    "wiring": {
+      "label": "Copper Wire (avg)",
+      "colour": "#d35400",
+      "unit": "₹/metre",
+      "current_price": 70,
+      "yoy_change": +8.1,
+      "months": ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26"],
+      "index":  [118, 119, 120, 121, 122, 123, 124, 126, 127, 128, 127, 127, 128, 130, 131, 132, 131, 133, 134, 135, 136, 135, 136, 138],
+      "price":  [58, 59, 59, 60, 60, 61, 61, 62, 63, 63, 63, 63, 63, 64, 65, 65, 65, 66, 66, 67, 67, 67, 67, 70]
+    }
+  },
+  "demand_signals": {
+    "note": "Relative demand index — 100 = average month. Peaks in Nov-Jan (wedding + construction season), dip in Jul-Aug (monsoon).",
+    "cement":  [92, 95, 88, 75, 70, 72, 85, 98, 108, 115, 112, 105, 93, 96, 89, 76, 71, 73, 86, 99, 109, 116, 113, 106],
+    "steel":   [90, 93, 87, 74, 68, 70, 84, 97, 107, 114, 110, 104, 91, 94, 88, 75, 69, 71, 85, 98, 108, 115, 111, 105],
+    "tiles":   [95, 98, 92, 80, 75, 78, 90, 102, 112, 118, 115, 108, 96, 99, 93, 81, 76, 79, 91, 103, 113, 119, 116, 109],
+    "paints":  [98, 100, 95, 82, 78, 80, 93, 105, 115, 120, 118, 110, 99, 101, 96, 83, 79, 81, 94, 106, 116, 121, 119, 111],
+    "plywood": [88, 90, 85, 74, 70, 72, 82, 95, 105, 112, 108, 102, 89, 91, 86, 75, 71, 73, 83, 96, 106, 113, 109, 103],
+    "wiring":  [94, 96, 91, 79, 74, 77, 88, 100, 110, 117, 114, 107, 95, 97, 92, 80, 75, 78, 89, 101, 111, 118, 115, 108]
+  },
+  "regional_price_variance": {
+    "note": "Price as % of national average by city. Source: Market surveys 2025-26.",
+    "Mumbai":    { "cement": 105, "steel": 103, "tiles": 110, "paints": 107, "plywood": 108, "wiring": 106 },
+    "Delhi":     { "cement": 102, "steel": 101, "tiles": 104, "paints": 103, "plywood": 104, "wiring": 103 },
+    "Bangalore": { "cement": 104, "steel": 102, "tiles": 106, "paints": 105, "plywood": 105, "wiring": 104 },
+    "Chennai":   { "cement": 97,  "steel": 98,  "tiles": 96,  "paints": 98,  "plywood": 97,  "wiring": 98  },
+    "Hyderabad": { "cement": 99,  "steel": 100, "tiles": 98,  "paints": 99,  "plywood": 99,  "wiring": 100 },
+    "Ahmedabad": { "cement": 95,  "steel": 96,  "tiles": 94,  "paints": 95,  "plywood": 95,  "wiring": 96  },
+    "Pune":      { "cement": 101, "steel": 101, "tiles": 102, "paints": 102, "plywood": 102, "wiring": 101 },
+    "Kolkata":   { "cement": 96,  "steel": 97,  "tiles": 95,  "paints": 96,  "plywood": 96,  "wiring": 97  }
+  },
+  "competitor_landscape": {
+    "tiles":   { "vendors": 1840, "avg_margin": 18, "price_range_pct": 22 },
+    "cement":  { "vendors": 620,  "avg_margin": 9,  "price_range_pct": 12 },
+    "steel":   { "vendors": 930,  "avg_margin": 7,  "price_range_pct": 10 },
+    "paints":  { "vendors": 2100, "avg_margin": 24, "price_range_pct": 28 },
+    "plywood": { "vendors": 1250, "avg_margin": 20, "price_range_pct": 25 },
+    "wiring":  { "vendors": 780,  "avg_margin": 15, "price_range_pct": 18 }
+  }
+}

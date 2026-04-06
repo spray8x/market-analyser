@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' https://placehold.co data:;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' https://placehold.co https://*.placehold.co data: blob:; connect-src 'self';">
+
 <title>VendorPulse — Vendor Dashboard</title>
 <link rel="stylesheet" href="css/base.css">
 <style>
@@ -304,22 +305,39 @@ function onCityChange(city) {
   renderPricer();
 }
 
-// ── Chart.js default theme ──
-Chart.defaults.color          = '#7a82a0';
-Chart.defaults.borderColor    = '#252a3a';
-Chart.defaults.font.family    = "'DM Sans', sans-serif";
-Chart.defaults.font.size      = 12;
-Chart.defaults.plugins.legend.labels.usePointStyle = true;
-Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
-
+// ── Chart helper ──
 function mkChart(id, config) {
-  if (_charts[id]) _charts[id].destroy();
-  _charts[id] = new Chart(document.getElementById(id), config);
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  const canvas = document.getElementById(id);
+  if (!canvas) { console.warn('mkChart: no canvas#' + id); return null; }
+  _charts[id] = new Chart(canvas, config);
   return _charts[id];
 }
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', async () => {
+  // Apply Chart.js defaults here, after Chart is guaranteed loaded
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color                                  = '#c8cedd';
+    Chart.defaults.borderColor                            = '#2e3448';
+    Chart.defaults.font.family                            = "'DM Sans', sans-serif";
+    Chart.defaults.font.size                              = 13;
+    Chart.defaults.plugins.legend.labels.usePointStyle   = false;
+    Chart.defaults.plugins.legend.labels.boxWidth        = 12;
+    Chart.defaults.plugins.legend.labels.boxHeight       = 12;
+    Chart.defaults.plugins.legend.labels.borderRadius    = 3;
+    Chart.defaults.plugins.legend.labels.padding         = 16;
+    Chart.defaults.plugins.legend.labels.color           = '#c8cedd';
+    Chart.defaults.plugins.tooltip.backgroundColor       = '#1a1e2b';
+    Chart.defaults.plugins.tooltip.borderColor           = '#3a4060';
+    Chart.defaults.plugins.tooltip.borderWidth           = 1;
+    Chart.defaults.plugins.tooltip.titleColor            = '#eef0f6';
+    Chart.defaults.plugins.tooltip.bodyColor             = '#c8cedd';
+    Chart.defaults.plugins.tooltip.padding               = 10;
+    Chart.defaults.scale.ticks.color                     = '#c8cedd';
+    Chart.defaults.scale.grid.color                      = '#1e2235';
+  }
+
   document.getElementById('city-sel').value = _currentCity;
   document.getElementById('overview-date').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
@@ -339,8 +357,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     populatePricerSelect();
     updatePricer();
   } catch(e) {
-    console.error(e);
-    toast('Failed to load data. Check console.', 'error');
+    console.error('[VendorPulse] Init failed:', e);
+    const main = document.querySelector('.main');
+    if (main) main.insertAdjacentHTML('afterbegin',
+      `<div style="background:rgba(231,76,94,.1);border:1px solid rgba(231,76,94,.4);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.85rem">
+        <strong style="color:#e74c5e">⚠ Data load failed</strong><br>
+        <span style="color:#7a82a0">${e.message || e}</span><br>
+        <span style="color:#4a5070;font-size:.75rem">Ensure you are serving via HTTP (not file://). Run: <code>python3 -m http.server 8000</code></span>
+      </div>`);
+    toast('Data load failed — see error banner above', 'error', 8000);
   }
 });
 
@@ -399,15 +424,15 @@ function renderOverview() {
     },
     options: {
       cutout: '65%',
-      plugins: { legend: { position: 'right' }, tooltip: {
+      plugins: { legend: { position: 'right', labels: { color: '#c8cedd', boxWidth: 12, boxHeight: 12, padding: 14 } }, tooltip: {
         callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString('en-IN')} vendors` }
       }}
     }
   });
 
-  // Regional bar
+  // Regional bar — filter out the 'note' metadata key
   const rv = _trends.regional_price_variance;
-  const cities = Object.keys(rv);
+  const cities = Object.keys(rv).filter(k => k !== 'note');
   const catKeys = Object.keys(rv[cities[0]]);
   const colours = ['#f5a623','#4fc3f7','#2ecc8f','#8e44ad','#e74c5e','#e67e22'];
   mkChart('region-chart', {
@@ -419,14 +444,16 @@ function renderOverview() {
         data: cities.map(c => rv[c][cat]),
         backgroundColor: colours[i] + '99',
         borderColor: colours[i],
-        borderWidth: 1
+        borderWidth: 2,
+        borderRadius: 3
       }))
     },
     options: {
       scales: {
-        y: { title: { display: true, text: 'Index (100 = national avg)' }, min: 90, max: 115 }
+        y: { title: { display: true, text: 'Index (100 = national avg)', color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' }, min: 90, max: 115 },
+        x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } }
       },
-      plugins: { legend: { position: 'top' } }
+      plugins: { legend: { position: 'top', labels: { color: '#c8cedd', boxWidth: 12, boxHeight: 12, padding: 16 } } }
     }
   });
 }
@@ -450,7 +477,8 @@ function updateOverviewChart(key) {
       }]
     },
     options: {
-      scales: { y: { title: { display: true, text: 'Index (2020=100)' } } },
+      scales: { y: { title: { display: true, text: 'Index (2020=100)', color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } },
+                x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } } },
       plugins: { legend: { display: false } }
     }
   });
@@ -503,8 +531,9 @@ function updateTrendCharts(key) {
       }))
     },
     options: {
-      scales: { y: { title: { display: true, text: 'WPI Index (2020 = 100)' } } },
-      plugins: { legend: { position: 'top' } }
+      scales: { y: { title: { display: true, text: 'WPI Index (2020 = 100)', color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } },
+                x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } } },
+      plugins: { legend: { position: 'top', labels: { color: '#c8cedd', boxWidth: 12, boxHeight: 12, padding: 16 } } }
     }
   });
 
@@ -523,7 +552,8 @@ function updateTrendCharts(key) {
       }]
     },
     options: {
-      scales: { y: { title: { display: true, text: `₹ per ${s.unit.split('/')[1]||'unit'}` } } },
+      scales: { y: { title: { display: true, text: `₹ per ${s.unit.split('/')[1]||'unit'}`, color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } },
+                x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } } },
       plugins: { legend: { display: false } }
     }
   });
@@ -588,8 +618,9 @@ function renderDemand() {
       }))
     },
     options: {
-      scales: { y: { title: { display: true, text: 'Demand Index (100 = avg)' } } },
-      plugins: { legend: { position: 'top' } }
+      scales: { y: { title: { display: true, text: 'Demand Index (100 = avg)', color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } },
+                x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } } },
+      plugins: { legend: { position: 'top', labels: { color: '#c8cedd', boxWidth: 12, boxHeight: 12, padding: 16 } } }
     }
   });
 }
@@ -703,7 +734,8 @@ function renderCompetitor() {
       }]
     },
     options: {
-      scales: { y: { title: { display: true, text: `₹ / ${p.unit}` } } },
+      scales: { y: { title: { display: true, text: `₹ / ${p.unit}`, color: '#c8cedd' }, ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } },
+                x: { ticks: { color: '#c8cedd' }, grid: { color: '#1e2235' } } },
       plugins: { legend: { display: false } }
     }
   });
